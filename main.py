@@ -5,6 +5,7 @@ import csv
 
 screen_width = 480
 screen_height = 320
+game_scale = 2
 tile_size = 32
 screen_width_in_tiles = int(screen_width / tile_size)
 screen_height_in_tiles = int(screen_height / tile_size)
@@ -65,22 +66,25 @@ class Sprite(pygame.sprite.Sprite):
         global tile_size
         global screen_x
         global screen_y
+        global scale
         
-        self.source = pygame.image.load("." + os.sep + "classes" + os.sep + frames + ".sprite").convert_alpha()
-        self.size = self.source.get_size()[0]
-        self.frame_count = self.source.get_size()[1] // self.size
+        self.source = pygame.image.load("." + os.sep + "classes" + os.sep + frames + os.sep + frames + ".png").convert_alpha()
+        self.source = pygame.transform.scale(self.source, (self.source.get_size()[0] * game_scale, self.source.get_size()[1] * game_scale))
+        self.size = self.source.get_size()[1]
+        self.frame_count = self.source.get_size()[0] // self.size
+        print(frames, uid)
         for i in range(self.frame_count):
-            self.standing_animation.append(self.source.subsurface(0, i * self.size, self.size, self.size))
+            self.standing_animation.append(self.source.subsurface(i * self.size, 0, self.size, self.size))
         
-        self.pos = (pos[0], pos[1])  # TODO: OOP
+        self.pos = pos  # TODO: OOP
         self.rect = ((pos[0] * tile_size) - (self.size - tile_size >> 1), (pos[1] * tile_size) - (self.size - tile_size >> 1), self.size, self.size)
         
     def update(self, *args):
         global playtime
-        if playtime > self.last_update + 0.15:
+        if playtime > self.last_update + 0.5:
             self.last_update = playtime
             self.frame += 1
-        self.image = self.standing_animation[(self.frame) % self.frame_count]
+        self.image = self.standing_animation[self.frame % self.frame_count]
         self.rect = (((self.pos[0] + screen_x) * tile_size) - (self.size - tile_size >> 1), ((self.pos[1] + screen_y) * tile_size) - (self.size - tile_size >> 1), self.size, self.size)
         
     def kill(self):
@@ -98,10 +102,10 @@ class Sprite(pygame.sprite.Sprite):
 
 class Item():
 
-    def __init__(self, NAME, ICON, Type, RANK, RANGE, WT, MT, HIT, CRIT, MAX_DUR, WORTH, WEX, SPC):
+    def __init__(self, NAME, ICON, TYPE, RANK, RANGE, WT, MT, HIT, CRIT, MAX_DUR, WORTH, WEX, SPC):
         self.NAME = NAME
         self.ICON = ICON
-        self.Type = Type
+        self.TYPE = TYPE
         self.RANK = RANK
         self.RANGE = RANGE
         self.WT = WT
@@ -113,14 +117,14 @@ class Item():
         self.WORTH = WORTH
         self.WEX = WEX
         self.SPC = SPC
-        self.image = pygame.image.load("." + os.sep + "resources" + os.sep + "items" + os.sep + ICON + ".png").convert_alpha
+        self.image = pygame.image.load("." + os.sep + "resources" + os.sep + "items" + os.sep + TYPE + os.sep + ICON + ".png").convert_alpha()
 
 
 class Actor():
     
-    items = []
+    items = [None, None, None, None, None]
 
-    def __init__(self, NAME, UID, MUG, CLASS, DESC, SPC, LEVEL, BASE_HP, BASE_STR, BASE_SKL, BASE_SPD, BASE_LUK, BASE_DEF, BASE_RES, HP_GROWTH, STR_GROWTH, SKL_GROWTH, SPD_GROWTH, LUK_GROWTH, DEF_GROWTH, RES_GROWTH, MOVE, MOVE_TYPE, CON, AID, AFFIN, SWORD, AXE, LANCE, BOW, ANIMA, DARK, LIGHT, STAFF, ITEM_1, ITEM_2, ITEM_3, ITEM_4, ITEM_5, SUPPORT_1, SUPPORT_1_BASE, SUPPORT_1_GROWTH, SUPPORT_2, SUPPORT_2_BASE, SUPPORT_2_GROWTH, SUPPORT_3, SUPPORT_3_BASE, SUPPORT_3_GROWTH, SUPPORT_4, SUPPORT_4_BASE, SUPPORT_4_GROWTH, SUPPORT_5, SUPPORT_5_BASE, SUPPORT_5_GROWTH):
+    def __init__(self, NAME, UID, MUG, CLASS, DESC, SPC, ALLIANCE, LEVEL, BASE_HP, BASE_STR, BASE_SKL, BASE_SPD, BASE_LUK, BASE_DEF, BASE_RES, HP_GROWTH, STR_GROWTH, SKL_GROWTH, SPD_GROWTH, LUK_GROWTH, DEF_GROWTH, RES_GROWTH, MOVE, MOVE_TYPE, CON, AID, AFFIN, SWORD, AXE, LANCE, BOW, ANIMA, DARK, LIGHT, STAFF, ITEM_1, ITEM_2, ITEM_3, ITEM_4, ITEM_5, SUPPORT_1, SUPPORT_1_BASE, SUPPORT_1_GROWTH, SUPPORT_2, SUPPORT_2_BASE, SUPPORT_2_GROWTH, SUPPORT_3, SUPPORT_3_BASE, SUPPORT_3_GROWTH, SUPPORT_4, SUPPORT_4_BASE, SUPPORT_4_GROWTH, SUPPORT_5, SUPPORT_5_BASE, SUPPORT_5_GROWTH):
         self.NAME = NAME
         self.UID = UID
         self.MUG = pygame.image.load("." + os.sep + "characters" + os.sep + MUG + ".png").convert_alpha()
@@ -165,17 +169,18 @@ class Actor():
         self.DARK = DARK
         self.LIGHT = LIGHT
         self.STAFF = STAFF
-        for item in PyGame.items:
-            if ITEM_1 == item.NAME:
-                self.items.append(item)
-            if ITEM_2 == item.NAME:
-                self.items.append(item)
-            if ITEM_3 == item.NAME:
-                self.items.append(item)
-            if ITEM_4 == item.NAME:
-                self.tems.append(item)
-            if ITEM_5 == item.NAME:
-                self.items.append(item)
+        for i in range(0,5):
+            for x, item in enumerate(PyGame.items):
+                if ITEM_1 == item.NAME:
+                    self.items[0] = item
+                if ITEM_2 == item.NAME:
+                    self.items[1] = item
+                if ITEM_3 == item.NAME:
+                    self.items[2] = item
+                if ITEM_4 == item.NAME:
+                    self.items[3] = item
+                if ITEM_5 == item.NAME:
+                    self.items[4] = item
         self.SUPPORT_1 = SUPPORT_1
         self.SUPPORT_1_BASE = SUPPORT_1_BASE
         self.SUPPORT_1_GROWTH = SUPPORT_1_GROWTH
@@ -233,7 +238,8 @@ class Level():
         del data[0]
         self.actors = []
         for l in data:  # Ugly as fuck but who cares?
-            self.actors.append(Actor(l[0], l[1], l[2], l[3], l[4], l[5], l[6], l[7], l[8], l[9], l[10], l[11], l[12], l[13], l[14], l[15], l[16], l[17], l[18], l[19], l[20], l[21], l[22], l[23], l[24], l[25], l[26], l[27], l[28], l[29], l[30], l[31], l[32], l[33], l[34], l[35], l[36], l[37], l[38], l[39], l[40], l[41], l[42], l[43], l[44], l[45], l[46], l[47], l[48], l[49], l[50], l[51], l[52], l[53]))
+            print(l)
+            self.actors.append(Actor(l[0], l[1], l[2], l[3], l[4], l[5], l[6], l[7], l[8], l[9], l[10], l[11], l[12], l[13], l[14], l[15], l[16], l[17], l[18], l[19], l[20], l[21], l[22], l[23], l[24], l[25], l[26], l[27], l[28], l[29], l[30], l[31], l[32], l[33], l[34], l[35], l[36], l[37], l[38], l[39], l[40], l[41], l[42], l[43], l[44], l[45], l[46], l[47], l[48], l[49], l[50], l[51], l[52], l[53], l[54]))
         
     def load_units(self, loc="." + os.sep + "data" + os.sep + "characters.csv"):
         pass
@@ -560,15 +566,22 @@ class PyGame():
         # Process key presses
         for key in key_buffer:
             if game_mode == "r_screen":
-                if key == pygame.K_s:
+                if key == pygame.K_w:
                     game_mode = "set_to_map"
                 elif key == pygame.K_RIGHT:
-                    if r_screen == "stats":
-                        r_screen = "inv"
-                    elif r_screen == "inv":
-                        r_screen = "supports"
-                    elif r_screen == "supports":
-                        r_screen = "stats"
+                    if self.r_screen == "stats":
+                        self.r_screen = "inv"
+                    elif self.r_screen == "inv":
+                        self.r_screen = "supports"
+                    elif self.r_screen == "supports":
+                        self.r_screen = "stats"
+                elif key == pygame.K_LEFT:
+                    if self.r_screen == "stats":
+                        self.r_screen = "supports"
+                    elif self.r_screen == "inv":
+                        self.r_screen = "stats"
+                    elif self.r_screen == "supports":
+                        self.r_screen = "inv"
             if game_mode == "map":
                 # Screen Scrolling Begins
                 if key == pygame.K_DOWN:
@@ -622,10 +635,10 @@ class PyGame():
         pygame.draw.rect(self.foreground, (254, 254, 254), (cursor_x * tile_size, cursor_y * tile_size, tile_size, tile_size >> 3))
         pygame.draw.rect(self.foreground, (254, 254, 254), (cursor_x * tile_size, cursor_y * tile_size, tile_size >> 3, tile_size))
         
-    def render_console(self):
+    def render_console(self): #Draws the console
         global console_line
         
-        self.menus.fill((0, 0, 0))  # Clear Menus
+        self.menus.fill((0, 0, 0))
         pygame.draw.rect(self.menus, (254, 254, 254), (tile_size >> 1, tile_size >> 1, screen_width - tile_size, screen_height - tile_size))
         pygame.draw.rect(self.menus, (1, 1, 1), (tile_size, screen_height - tile_size - 26, screen_width - (tile_size << 1), 1))
         self.draw_text(self.console_line, (1, 1, 1), tile_size, screen_height - tile_size - 16)
@@ -633,7 +646,7 @@ class PyGame():
             if self.console_history[i] != "":
                 self.draw_text(self.console_history[i], (1, 1, 1), tile_size, tile_size + (i * 16))
                 
-    def render_mini_menu(self):
+    def render_mini_menu(self): #Draws the mini menu in the bottom-left corner of the screen
         pygame.draw.rect(self.menus, (64, 128, 200), (tile_size >> 1, screen_height - ((tile_size << 1) + (tile_size >> 1)), tile_size << 2, tile_size << 1))
         for actor in self.level.get_actors():
             if actor.get_pos()[0] == (cursor_x - screen_x) and actor.get_pos()[1] == (cursor_y - screen_y):
@@ -642,6 +655,7 @@ class PyGame():
         self.draw_text(self.level.get_map_terrain()[cursor_y - screen_y][cursor_x - screen_x], (254, 254, 254), tile_size, screen_height - (tile_size << 1))
         
     def render_movement_graph(self):
+        # Old, unfinished
         global any_selected
         global tile_size
         global cursor_x
@@ -688,8 +702,7 @@ class PyGame():
         
     def render_r_screen(self):
         global screen_width, screen_height
-        # pygame.draw.rect(self.menus, (24, 155, 13), (0, 0, screen_width, screen_height))
-        pygame.draw.rect(self.menus, (64, 128, 200), (200, 44, 266, 204)) # Big box on the right
+        pygame.draw.rect(self.menus, (64, 128, 200), (208, 16, 256, 284)) # Big box on the right
         pygame.draw.rect(self.menus, (64, 128, 200), (16, 240, 170, 64)) # Small bottom-left box
         self.menus.blit(self.focus_actor.MUG, (8, 8))
         
@@ -697,22 +710,49 @@ class PyGame():
         self.draw_text("LVL: {} EXP: {}".format(self.focus_actor.LEVEL.rjust(2, ' '), self.focus_actor.EXP).rjust(2, ' '), (255, 255, 255), 16, 260)
         self.draw_text("HP: {}/{}".format(self.focus_actor.CURRENT_HP.rjust(2, ' '), self.focus_actor.MAX_HP).rjust(2, ' '), (255, 255, 255), 16, 280)
         
-        self.draw_text("STR: {}   MOVE: {}".format(self.focus_actor.STR.rjust(2, ' '), self.focus_actor.MOVE).rjust(2, ' '), (255, 255, 255), 216, 52)
-        self.draw_text("SKL: {}    CON: {}".format(self.focus_actor.SKL.rjust(2, ' '), self.focus_actor.CON).rjust(2, ' '), (255, 255, 255), 216, 74)
-        self.draw_text("SPD: {}    AID: {}".format(self.focus_actor.SPD.rjust(2, ' '), self.focus_actor.AID).rjust(2, ' '), (255, 255, 255), 216, 96)
-        
         if self.r_screen == "stats":
-            self.draw_text("STR: {}   MOVE: {}".format(self.focus_actor.STR.rjust(2, ' '), self.focus_actor.MOVE).rjust(2, ' '), (255, 255, 255), 216, 52)
-            self.draw_text("SKL: {}    CON: {}".format(self.focus_actor.SKL.rjust(2, ' '), self.focus_actor.CON).rjust(2, ' '), (255, 255, 255), 216, 74)
-            self.draw_text("SPD: {}    AID: {}".format(self.focus_actor.SPD.rjust(2, ' '), self.focus_actor.AID).rjust(2, ' '), (255, 255, 255), 216, 96)
-            self.draw_text("LUK: {}    TRV: {}".format(self.focus_actor.LUK.rjust(2, ' '), self.focus_actor.TRV).rjust(2, ' '), (255, 255, 255), 216, 118)
-            self.draw_text("DEF: {}   AFFN: {}".format(self.focus_actor.DEF.rjust(2, ' '), self.focus_actor.AFFIN).rjust(2, ' '), (255, 255, 255), 216, 140)
-            self.draw_text("RES: {}   COND: {}".format(self.focus_actor.RES.rjust(2, ' '), self.focus_actor.COND).rjust(2, ' '), (255, 255, 255), 216, 162)
+            self.draw_text("Personal data", (255, 255, 255), 232, 24)
+            self.draw_text("STR: {}   MOVE: {}".format(self.focus_actor.STR.rjust(2, ' '), self.focus_actor.MOVE).rjust(2, ' '), (255, 255, 255), 216, 50)
+            self.draw_text("SKL: {}    CON: {}".format(self.focus_actor.SKL.rjust(2, ' '), self.focus_actor.CON).rjust(2, ' '), (255, 255, 255), 216, 70)
+            self.draw_text("SPD: {}    AID: {}".format(self.focus_actor.SPD.rjust(2, ' '), self.focus_actor.AID).rjust(2, ' '), (255, 255, 255), 216, 90)
+            self.draw_text("LUK: {}    TRV: {}".format(self.focus_actor.LUK.rjust(2, ' '), self.focus_actor.TRV).rjust(2, ' '), (255, 255, 255), 216, 110)
+            self.draw_text("DEF: {}   AFFN: {}".format(self.focus_actor.DEF.rjust(2, ' '), self.focus_actor.AFFIN).rjust(2, ' '), (255, 255, 255), 216, 130)
+            self.draw_text("RES: {}   COND: {}".format(self.focus_actor.RES.rjust(2, ' '), self.focus_actor.COND).rjust(2, ' '), (255, 255, 255), 216, 150)
         elif self.r_screen == "inv":
-            self.draw_text("STR: {}   MOVE: {}".format(self.focus_actor.STR.rjust(2, ' '), self.focus_actor.MOVE).rjust(2, ' '), (255, 255, 255), 216, 52)
+            self.draw_text("Items", (255, 255, 255), 232, 24)
+            # Attack
+            if self.focus_actor.items[0] != None:
+                atk = int(self.focus_actor.STR) + int(self.focus_actor.items[0].MT)
+            else:
+                atk = 0
+            # Crit
+            if self.focus_actor.items[0] != None:
+                crit = int(self.focus_actor.SKL) >> 1 + int(self.focus_actor.items[0].CRIT)
+            else:
+                crit = 0
+            # HIT
+            if self.focus_actor.items[0] != None:
+                #hit = int(self.focus_actor.SKL) << 1 + int(self.focus_actor.LUK) >> 1 + int(self.focus_actor.items[0].HIT)
+                hit = int(self.focus_actor.items[0].HIT) + (int(self.focus_actor.LUK) >> 1) + (int(self.focus_actor.SKL) << 1)
+            else:
+                hit = 1
+            # Avoid
+            if self.focus_actor.items[0] != None:
+                avoid = (int(self.focus_actor.SPD) - max(0, (int(self.focus_actor.items[0].WT) - int(self.focus_actor.CON)))) * 2 + (int(self.focus_actor.LUK))
+            else:
+                avoid = int(self.focus_actor.SPD) * 2 + int(self.focus_actor.LUK)
+            for x, item in enumerate(self.focus_actor.items): # Draws the items
+                if item != None:
+                    self.menus.blit(item.image, (208, 52 + (x * 32)))
+                    self.draw_text("{} {}/{}".format(item.NAME, item.DUR, item.MAX_DUR), (255, 255, 255), 240, (56 + (x * 32)))
+            self.draw_text("Equip    Range: {}".format(self.focus_actor.items[0].RANGE.rjust(3, ' ')), (255, 255, 255), 208, 218)
+            self.draw_text("ATK: {}  CRIT: {}".format(str(atk).rjust(3, ' '), str(crit).rjust(3, ' ')), (255, 255, 255), 208, 238)
+            self.draw_text("HIT: {} AVOID: {}".format(str(hit).rjust(3, ' '), str(avoid).rjust(3, ' ')), (255, 255, 255), 208, 258)
         elif self.r_screen == "supports":
-            pass
-    
+            self.draw_text("Supports", (255, 255, 255), 232, 24)
+            self.draw_text("SWORD: {}   AXE: {}".format(self.focus_actor.SWORD.rjust(1, ' '), self.focus_actor.AXE.rjust(1, ' ')), (255, 255, 255), 216, 50)
+            self.draw_text("LANCE: {}   BOW: {}".format(self.focus_actor.LANCE.rjust(1, ' '), self.focus_actor.BOW.rjust(1, ' ')), (255, 255, 255), 216, 70)
+            
     def render(self):
         global map_tiles
         global tile_size
@@ -764,7 +804,12 @@ class PyGame():
 if __name__ == "__main__":
     PyGame(screen_width, screen_height).run()
 
-''' TO GET BACK TO
+''' 
+### BUGS
+-Sprites
+-Inventories
+
+### TO GET BACK TO
 -Finish adding in all the buttons
 -Make the entire thing OOP and remove all the global variables
 -Bugtest
