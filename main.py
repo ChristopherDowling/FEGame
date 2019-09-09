@@ -2,6 +2,7 @@ import pygame
 import pygame.locals
 import os
 import csv
+import copy
 
 screen_width = 480
 screen_height = 320
@@ -50,6 +51,8 @@ cursor_y = 0
 
 any_selected = False
 
+test_images = []
+
 
 class Sprite(pygame.sprite.Sprite):
     
@@ -59,25 +62,26 @@ class Sprite(pygame.sprite.Sprite):
     standing_animation = []
     size = 0
     pos = (0, 0)
-    uid = 0
+    UID = 0
     
-    def __init__(self, frames=None, uid=0, pos=(0, 0)):
+    def __init__(self, frames=None, UID=0, pos=(0, 0)):
         pygame.sprite.Sprite.__init__(self)
         global tile_size
         global screen_x
         global screen_y
         global scale
         
-        self.source = pygame.image.load("." + os.sep + "classes" + os.sep + frames + os.sep + frames + ".png").convert_alpha()
-        self.source = pygame.transform.scale(self.source, (self.source.get_size()[0] * game_scale, self.source.get_size()[1] * game_scale))
-        self.size = self.source.get_size()[1]
-        self.frame_count = self.source.get_size()[0] // self.size
-        print(frames, uid)
+        self.UID = UID
+        self.frames = frames
+        self.source = pygame.image.load("." + os.sep + "classes" + os.sep + frames + os.sep + frames + ".png").convert_alpha()  # laods image in to memory
+        self.source = pygame.transform.scale(self.source, (self.source.get_size()[0] * game_scale, self.source.get_size()[1] * game_scale))  # Scales to appropriate size
+        self.size = self.source.get_size()[1]  # Gets the verticle size of the image
+        self.frame_count = self.source.get_size()[0] // self.size  # Figures out how many squares (frames) are in the image, based on the height and width
+        self.standing_animation = []
         for i in range(self.frame_count):
             self.standing_animation.append(self.source.subsurface(i * self.size, 0, self.size, self.size))
-        
+        self.image = self.standing_animation[0]
         self.pos = pos  # TODO: OOP
-        self.rect = ((pos[0] * tile_size) - (self.size - tile_size >> 1), (pos[1] * tile_size) - (self.size - tile_size >> 1), self.size, self.size)
         
     def update(self, *args):
         global playtime
@@ -121,13 +125,12 @@ class Item():
 
 
 class Actor():
-    
-    items = [None, None, None, None, None]
 
     def __init__(self, NAME, UID, MUG, CLASS, DESC, SPC, ALLIANCE, LEVEL, BASE_HP, BASE_STR, BASE_SKL, BASE_SPD, BASE_LUK, BASE_DEF, BASE_RES, HP_GROWTH, STR_GROWTH, SKL_GROWTH, SPD_GROWTH, LUK_GROWTH, DEF_GROWTH, RES_GROWTH, MOVE, MOVE_TYPE, CON, AID, AFFIN, SWORD, AXE, LANCE, BOW, ANIMA, DARK, LIGHT, STAFF, ITEM_1, ITEM_2, ITEM_3, ITEM_4, ITEM_5, SUPPORT_1, SUPPORT_1_BASE, SUPPORT_1_GROWTH, SUPPORT_2, SUPPORT_2_BASE, SUPPORT_2_GROWTH, SUPPORT_3, SUPPORT_3_BASE, SUPPORT_3_GROWTH, SUPPORT_4, SUPPORT_4_BASE, SUPPORT_4_GROWTH, SUPPORT_5, SUPPORT_5_BASE, SUPPORT_5_GROWTH):
         self.NAME = NAME
         self.UID = UID
         self.MUG = pygame.image.load("." + os.sep + "characters" + os.sep + MUG + ".png").convert_alpha()
+        self.CHIBI = pygame.transform.scale(self.MUG, (self.MUG.get_size()[0] >> 2, self.MUG.get_size()[1] >> 2))  # Scales to appropriate size
         self.CLASS = CLASS
         self.DESC = DESC
         self.SPC = SPC
@@ -169,7 +172,8 @@ class Actor():
         self.DARK = DARK
         self.LIGHT = LIGHT
         self.STAFF = STAFF
-        for i in range(0,5):
+        self.items = [None, None, None, None, None]
+        for i in range(0, 5):
             for x, item in enumerate(PyGame.items):
                 if ITEM_1 == item.NAME:
                     self.items[0] = item
@@ -230,20 +234,25 @@ class Level():
         self.level = level
         self.map_tiles = self.load_map(level)
         self.map_terrain = self.load_map_terrain(level)
+        self.actors = self.load_characters()
         
-        self.load_characters()
+    def load(self, loc):
+        load_characters(loc)
+        load_map_terrain(loc)
         
     def load_characters(self, loc="." + os.sep + "data" + os.sep + "characters.csv"):
         data = list(csv.reader(open(loc)))
-        del data[0]
-        self.actors = []
+        del data[0]  # Remove column labels from data
+        actors = []
         for l in data:  # Ugly as fuck but who cares?
-            print(l)
-            self.actors.append(Actor(l[0], l[1], l[2], l[3], l[4], l[5], l[6], l[7], l[8], l[9], l[10], l[11], l[12], l[13], l[14], l[15], l[16], l[17], l[18], l[19], l[20], l[21], l[22], l[23], l[24], l[25], l[26], l[27], l[28], l[29], l[30], l[31], l[32], l[33], l[34], l[35], l[36], l[37], l[38], l[39], l[40], l[41], l[42], l[43], l[44], l[45], l[46], l[47], l[48], l[49], l[50], l[51], l[52], l[53], l[54]))
+            actors.append(Actor(l[0], l[1], l[2], l[3], l[4], l[5], l[6], l[7], l[8], l[9], l[10], l[11], l[12], l[13], l[14], l[15], l[16], l[17], l[18], l[19], l[20], l[21], l[22], l[23], l[24], l[25], l[26], l[27], l[28], l[29], l[30], l[31], l[32], l[33], l[34], l[35], l[36], l[37], l[38], l[39], l[40], l[41], l[42], l[43], l[44], l[45], l[46], l[47], l[48], l[49], l[50], l[51], l[52], l[53], l[54]))
+        return actors
         
+    # TODO: FINISH
     def load_units(self, loc="." + os.sep + "data" + os.sep + "characters.csv"):
         pass
     
+    # TODO: FINISH
     def save_units(self, loc):
         location = "." + os.sep + "saves" + os.sep + loc + ".save"
         print("Saving to: ", location)
@@ -267,17 +276,16 @@ class Level():
     
     def load_map_terrain(self, level):
         filename = "." + os.sep + "maps" + os.sep + str(level) + os.sep + str(level) + ".terrain"
-        with open(filename, 'r') as f:
-            for line in f.readlines():
-                tmp = []
-                for item in line.split(','):
-                    tmp.append(item.replace('\n', ''))
-                self.map_terrain.append(tmp)
-        return self.map_terrain
+        data = list(csv.reader(open(filename)))
+        terrain = []
+        for l in data:  # Ugly as fuck but who cares?
+            terrain.append(l)
+        return terrain
         
     def load_map(self, level):
         filename = "." + os.sep + "maps" + os.sep + str(level) + os.sep + str(level) + ".map"
         image = pygame.image.load(filename).convert()
+        image = pygame.transform.scale(image, (image.get_size()[0] * game_scale, image.get_size()[1] * game_scale))  # Scales to appropriate size
         self.set_map_width(int(image.get_size()[0] / tile_size))
         self.set_map_height(int(image.get_size()[1] / tile_size))
         map_tiles = []
@@ -320,6 +328,7 @@ class PyGame():
     sprites = pygame.sprite.Group()
     
     blue_square = None
+    red_square = None
     
     r_screen = "stats"
     #    "stats" displays stats
@@ -328,6 +337,18 @@ class PyGame():
     focus_actor = None
     
     items = []
+    move_array = []
+    selected_actor = None
+    draw_range = None
+    
+    end_move = 0
+    #    0 = "attack"
+    #    1 = "item"
+    #    2 = "talk"
+    #    3 = "support"
+    #    4 = "options"
+    #    5 = "end"
+    
 
     def __init__(self, width=480, height=320, fps=30):
         pygame.init()
@@ -366,6 +387,10 @@ class PyGame():
         # Load Map
         self.level = Level(1)
         
+        # TEMP
+        self.process_console_line("move 1 1 1")
+        self.process_console_line("move 2 3 1")
+        
     def run(self):
         while self.mainloop:
             self.update_clock()
@@ -375,7 +400,8 @@ class PyGame():
         pygame.quit()
         
     def load_resources(self):
-        blue_square = pygame.image.load("." + os.sep + "resources" + os.sep + "blue_square.png").convert_alpha
+        self.blue_square = pygame.image.load("." + os.sep + "resources" + os.sep + "blue_square.png").convert_alpha()
+        self.red_square = pygame.image.load("." + os.sep + "resources" + os.sep + "red_square.png").convert_alpha()
         
         data = list(csv.reader(open("." + os.sep + "data" + os.sep + "items.csv")))
         del data[0]
@@ -437,7 +463,6 @@ class PyGame():
                         
             # Process keys in game mode
             elif input_mode == "game":
-                
                 # Key down
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_ESCAPE:
@@ -541,7 +566,7 @@ class PyGame():
                     actor.set_pos((int(args[2]), int(args[3])))
         elif line.startswith("list actors"):
             for actor in self.level.actors:
-                print(actor.name, actor.uid, actor.pos, actor.status)
+                print(actor.NAME, actor.UID, actor.pos, actor.status)
         elif line.startswith("save units "):
             arg = line.split(" ")[2]
             self.level.save_units(arg)
@@ -565,6 +590,27 @@ class PyGame():
         
         # Process key presses
         for key in key_buffer:
+            if game_mode == "end_move":
+                if key == pygame.K_w:
+                    game_mode = "set_to_map"
+                if key == pygame.K_d:
+                    if end_move == 0:
+                        game_mode = "attack"
+                    if end_move == 1:
+                        game_mode = "item"
+                    if end_move == 2:
+                        game_mode = "talk"
+                    if end_move == 3:
+                        game_mode = "support"
+                    if end_move == 4:
+                        game_mode = "options"
+                    if end_move == 5:
+                        game_mode = "set_to_map" # TODO: RENDER MENU WITH MOVING CURSOR
+                        any_selected = False
+                        self.selected_actor.status = "idle"
+                        selected_actor = None
+                        self.move_array = []
+                    
             if game_mode == "r_screen":
                 if key == pygame.K_w:
                     game_mode = "set_to_map"
@@ -613,16 +659,18 @@ class PyGame():
                     else:
                         cursor_x = max(cursor_x - 1, 0)
                 # End Screen Scrolling
-                elif key == pygame.K_d:
-                    self.try_to_move((cursor_x, cursor_y))
-                elif key == pygame.K_w:
+                elif key == pygame.K_d:  # A Button
+                    self.try_to_move((cursor_x - screen_x, cursor_y - screen_y))
+                elif key == pygame.K_w:  # B Button
                     any_selected = False
+                    selected_actor = None
+                    self.move_array = []
                     for actor in self.level.actors:
                         actor.status = "idle"
-                elif key == pygame.K_s:
+                elif key == pygame.K_s:  # R Button
                     if game_mode == "map":
                         for actor in self.level.actors:
-                            if actor.pos == (cursor_x, cursor_y):
+                            if actor.pos == (cursor_x - screen_x, cursor_y - screen_y):
                                 self.focus_actor = actor
                                 game_mode = "r_screen"
         
@@ -634,8 +682,10 @@ class PyGame():
     def draw_cursor(self):
         pygame.draw.rect(self.foreground, (254, 254, 254), (cursor_x * tile_size, cursor_y * tile_size, tile_size, tile_size >> 3))
         pygame.draw.rect(self.foreground, (254, 254, 254), (cursor_x * tile_size, cursor_y * tile_size, tile_size >> 3, tile_size))
+        pygame.draw.rect(self.foreground, (254, 254, 254), (cursor_x * tile_size, cursor_y * tile_size + (tile_size - (tile_size >> 3)), tile_size, tile_size >> 3))
+        pygame.draw.rect(self.foreground, (254, 254, 254), (cursor_x * tile_size + (tile_size - (tile_size >> 3)), cursor_y * tile_size, tile_size >> 3, tile_size))
         
-    def render_console(self): #Draws the console
+    def render_console(self):  # Draws the console
         global console_line
         
         self.menus.fill((0, 0, 0))
@@ -646,64 +696,173 @@ class PyGame():
             if self.console_history[i] != "":
                 self.draw_text(self.console_history[i], (1, 1, 1), tile_size, tile_size + (i * 16))
                 
-    def render_mini_menu(self): #Draws the mini menu in the bottom-left corner of the screen
-        pygame.draw.rect(self.menus, (64, 128, 200), (tile_size >> 1, screen_height - ((tile_size << 1) + (tile_size >> 1)), tile_size << 2, tile_size << 1))
-        for actor in self.level.get_actors():
-            if actor.get_pos()[0] == (cursor_x - screen_x) and actor.get_pos()[1] == (cursor_y - screen_y):
-                self.draw_text((actor.NAME + " " + str(actor.UID)), (254, 254, 254), tile_size, screen_height - ((tile_size << 1) + (tile_size >> 1)))
-                    # TEMP4
-        self.draw_text(self.level.get_map_terrain()[cursor_y - screen_y][cursor_x - screen_x], (254, 254, 254), tile_size, screen_height - (tile_size << 1))
+    def render_mini_menu(self):
+        if not any_selected:
+            terrain = self.level.get_map_terrain()[cursor_y - screen_y][cursor_x - screen_x]
+            DEF = ""
+            AVO = ""
+            if terrain == "Plains":
+                DEF = "0"
+                AVO = "0"
+            if terrain == "Forest":
+                DEF = "1"
+                AVO = "20"
         
+            for actor in self.level.get_actors():
+                if actor.get_pos()[0] == (cursor_x - screen_x) and actor.get_pos()[1] == (cursor_y - screen_y):
+                    # Draw Chibi portrait + HP
+                    if cursor_x > 7:
+                        pygame.draw.rect(self.menus, (64, 128, 200), (8, 8, 160, 52))
+                        self.draw_text((actor.NAME + " " + str(actor.UID)), (254, 254, 254), 68, 14)
+                        self.draw_text("{}/{}".format(actor.CURRENT_HP.rjust(2, " "), actor.CURRENT_HP.rjust(2, " ")), (254, 254, 254), 68, 34)
+                        self.menus.blit(actor.CHIBI, (12, 12))
+                    else:
+                        pygame.draw.rect(self.menus, (64, 128, 200), (312, 8, 160, 52))
+                        self.draw_text((actor.NAME + " " + str(actor.UID)), (254, 254, 254), 376, 14)
+                        self.draw_text("{}/{}".format(actor.CURRENT_HP.rjust(2, " "), actor.CURRENT_HP.rjust(2, " ")), (254, 254, 254), 376, 34)
+                        self.menus.blit(actor.CHIBI, (320, 12))
+        
+            if cursor_x > 7:
+                pygame.draw.rect(self.menus, (64, 128, 200), (8, 248, 100, 64))
+                self.draw_text(self.level.get_map_terrain()[cursor_y - screen_y][cursor_x - screen_x], (254, 254, 254), 16, 252)
+                self.draw_text("DEF: {}".format(DEF.rjust(2, " ")), (254, 254, 254), 16, 272)
+                self.draw_text("AVO: {}".format(AVO.rjust(2, " ")), (254, 254, 254), 16, 292)
+            else:
+                pygame.draw.rect(self.menus, (64, 128, 200), (372, 248, 100, 64))
+                self.draw_text(self.level.get_map_terrain()[cursor_y - screen_y][cursor_x - screen_x], (254, 254, 254), 376, 252)
+                self.draw_text("DEF: {}".format(DEF.rjust(2, " ")), (254, 254, 254), 376, 272)
+                self.draw_text("AVO: {}".format(AVO.rjust(2, " ")), (254, 254, 254), 376, 292)
+                
     def render_movement_graph(self):
-        # Old, unfinished
-        global any_selected
-        global tile_size
-        global cursor_x
-        global cursor_y
-        global screen_x
-        global screen_y
+        # # Render movable tiles
         
-        movement = 0
-        movement_type = 0
-        pos = (0, 0)
-        
-        if any_selected:
-            for actor in self.level.actors:
-                if actor.status == "selected":
-                    movement = actor.movement
-                    movement_type = actor.movement_type
-                    pos = actor.pos
-            
-            for x in range(-movement, movement):
-                for y in range(-movement, movement):
-                    if -movement <= x + y <= movement:
-                        self.foreground.blit(self.blue_square, ((actor.pos[0] + x + screen_x) * tile_size, (actor.pos[1] + y + screen_y) * tile_size))
-        
+        for y, row in enumerate(self.move_array):
+            for x, square in enumerate(row):
+                if not square.isalpha():
+                    self.foreground.blit(self.blue_square, ((x + screen_x) * tile_size, (y + screen_y) * tile_size))
+                elif self.draw_range == "1":
+                    if y > 0:
+                        if not self.move_array[y - 1][x].isalpha():
+                            self.foreground.blit(self.red_square, ((x + screen_x) * tile_size, (y + screen_y) * tile_size))
+                    if y + 1 < len(self.move_array):
+                        if not self.move_array[y + 1][x].isalpha():
+                            self.foreground.blit(self.red_square, ((x + screen_x) * tile_size, (y + screen_y) * tile_size))
+                    if x > 0:
+                        if not self.move_array[y][x - 1].isalpha():
+                            self.foreground.blit(self.red_square, ((x + screen_x) * tile_size, (y + screen_y) * tile_size))
+                    if x + 1 < len(self.move_array[0]):
+                        if not self.move_array[y][x + 1].isalpha():
+                            self.foreground.blit(self.red_square, ((x + screen_x) * tile_size, (y + screen_y) * tile_size))
+                elif self.draw_range == "1-2":
+                    if y > 0:
+                        if not self.move_array[y - 1][x].isalpha():
+                            self.foreground.blit(self.red_square, ((x + screen_x) * tile_size, (y + screen_y) * tile_size))
+                    if y > 1:
+                        if not self.move_array[y - 2][x].isalpha():
+                            self.foreground.blit(self.red_square, ((x + screen_x) * tile_size, (y + screen_y) * tile_size))
+                    if y + 1 < len(self.move_array):
+                        if not self.move_array[y + 1][x].isalpha():
+                            self.foreground.blit(self.red_square, ((x + screen_x) * tile_size, (y + screen_y) * tile_size))
+                    if y + 2 < len(self.move_array):
+                        if not self.move_array[y + 2][x].isalpha():
+                            self.foreground.blit(self.red_square, ((x + screen_x) * tile_size, (y + screen_y) * tile_size))
+                    if x > 0:
+                        if not self.move_array[y][x - 1].isalpha():
+                            self.foreground.blit(self.red_square, ((x + screen_x) * tile_size, (y + screen_y) * tile_size))
+                    if x > 1:
+                        if not self.move_array[y][x - 2].isalpha():
+                            self.foreground.blit(self.red_square, ((x + screen_x) * tile_size, (y + screen_y) * tile_size))
+                    if x + 2 < len(self.move_array[0]):
+                        if not self.move_array[y][x + 2].isalpha():
+                            self.foreground.blit(self.red_square, ((x + screen_x) * tile_size, (y + screen_y) * tile_size))
+                    if x + 2 < len(self.move_array[0]):
+                        if not self.move_array[y][x + 2].isalpha():
+                            self.foreground.blit(self.red_square, ((x + screen_x) * tile_size, (y + screen_y) * tile_size))
+                elif self.draw_range == "2":
+                    if y > 1:
+                        if not self.move_array[y - 2][x].isalpha():
+                            self.foreground.blit(self.red_square, ((x + screen_x) * tile_size, (y + screen_y) * tile_size))
+                    if y + 2 < len(self.move_array):
+                        if not self.move_array[y + 2][x].isalpha():
+                            self.foreground.blit(self.red_square, ((x + screen_x) * tile_size, (y + screen_y) * tile_size))
+                    if x > 1:
+                        if not self.move_array[y][x - 2].isalpha():
+                            self.foreground.blit(self.red_square, ((x + screen_x) * tile_size, (y + screen_y) * tile_size))
+                    if x + 2 < len(self.move_array[0]):
+                        if not self.move_array[y][x + 2].isalpha():
+                            self.foreground.blit(self.red_square, ((x + screen_x) * tile_size, (y + screen_y) * tile_size))
+                    
     def try_to_move(self, pos):
-        '''
         global any_selected
-        if any_selected:
-            for actor in self.level.actors:
-                if actor.status == "selected":
-                    print("Moving from", actor.pos, "to", (cursor_x, cursor_y))
-                    actor.set_pos((pos[0] - screen_x, pos[1] - screen_y))
-                    actor.status == "idle"
-                    any_selected = False
-        else:
-            for actor in self.level.actors:
-                if actor.pos == (cursor_x, cursor_y):
-                    actor.status = "selected"
-                    any_selected = True
-                    '''
+        just_selected = False
         
-        # Check if hasn't moved this turn
-        # Produce an array of squares they can move to
-        #
+        for actor in self.level.actors:
+            if actor.pos == pos and actor.status != "grey":
+                self.selected_actor = actor
+                actor.status = "selected"
+                any_selected = True
+                just_selected = True
+                self.draw_range = self.selected_actor.items[0].RANGE
+                
+        if not just_selected and any_selected and self.selected_actor != None:
+            if not self.move_array[cursor_y - screen_y][cursor_x - screen_x].isalpha():
+                self.selected_actor.set_pos((cursor_x - screen_x, cursor_y - screen_y))
+                game_mode = end_move
         
+        if self.selected_actor != None and any_selected == True and just_selected:
+            can_move = []
+            can_move = copy.deepcopy(self.level.map_terrain)
+            can_move[self.selected_actor.pos[1]][self.selected_actor.pos[0]] = self.selected_actor.MOVE
+            height = len(can_move) - 1
+            width = len(can_move[0]) - 1
+            for i in range(int(self.selected_actor.MOVE), 0, -1):  # Do it MOVE times
+                # print("i:", i)
+                for y, line in enumerate(can_move, 0):  # for every row
+                    for x, square in enumerate(line, 0):  # for every square
+                        # print("x:",x,"y:", y, " : ", can_move[y][x])
+                        
+                        up = 0
+                        if y > 0:  # If there's a square above
+                            if not can_move[y - 1][x].isalpha():  # and it is a number
+                                # print(x, y, "has", can_move[y-1][x], "above it")
+                                up = can_move[y - 1][x]
+                        down = 0
+                        if y < height:  # If there's a square below
+                            if not can_move[y + 1][x].isalpha():  # and it is a number
+                                # print(x, y, "has", can_move[y+1][x], "below it")
+                                down = can_move[y + 1][x]
+                        left = 0
+                        if x > 0:  # If there's a square to the left
+                            if not can_move[y][x - 1].isalpha():  # and it is a number
+                                # print(x, y, "has", can_move[y][x-1], "left of it")
+                                left = can_move[y][x - 1]
+                        right = 0
+                        if x < width:  # If there's a square to the right
+                            if not can_move[y][x + 1].isalpha():  # and it is a number
+                                # print(x, y, "has", can_move[y][x+1], "right of it")
+                                right = can_move[y][x + 1]
+                        
+                        maxx = 0
+                        maxx = max(int(up), int(down), int(left), int(right))
+                        if maxx == i:
+                            if can_move[y][x] == "Plains" and maxx >= 1:
+                                can_move[y][x] = str(maxx - 1)
+                            if can_move[y][x] == "Forest" and maxx >= 2:
+                                can_move[y][x] = str(maxx - 2)
+                                
+            '''
+            for l in can_move:
+                out = ""
+                for i in l:
+                    out += i.rjust(7, " ")
+                print(out)
+            '''
+            self.move_array = copy.deepcopy(can_move)
+
     def render_r_screen(self):
         global screen_width, screen_height
-        pygame.draw.rect(self.menus, (64, 128, 200), (208, 16, 256, 284)) # Big box on the right
-        pygame.draw.rect(self.menus, (64, 128, 200), (16, 240, 170, 64)) # Small bottom-left box
+        pygame.draw.rect(self.menus, (64, 128, 200), (208, 16, 256, 284))  # Big box on the right
+        pygame.draw.rect(self.menus, (64, 128, 200), (16, 240, 170, 64))  # Small bottom-left box
         self.menus.blit(self.focus_actor.MUG, (8, 8))
         
         self.draw_text("{}".format(self.focus_actor.CLASS), (255, 255, 255), 16, 240)
@@ -732,7 +891,7 @@ class PyGame():
                 crit = 0
             # HIT
             if self.focus_actor.items[0] != None:
-                #hit = int(self.focus_actor.SKL) << 1 + int(self.focus_actor.LUK) >> 1 + int(self.focus_actor.items[0].HIT)
+                # hit = int(self.focus_actor.SKL) << 1 + int(self.focus_actor.LUK) >> 1 + int(self.focus_actor.items[0].HIT)
                 hit = int(self.focus_actor.items[0].HIT) + (int(self.focus_actor.LUK) >> 1) + (int(self.focus_actor.SKL) << 1)
             else:
                 hit = 1
@@ -741,18 +900,22 @@ class PyGame():
                 avoid = (int(self.focus_actor.SPD) - max(0, (int(self.focus_actor.items[0].WT) - int(self.focus_actor.CON)))) * 2 + (int(self.focus_actor.LUK))
             else:
                 avoid = int(self.focus_actor.SPD) * 2 + int(self.focus_actor.LUK)
-            for x, item in enumerate(self.focus_actor.items): # Draws the items
+            for x, item in enumerate(self.focus_actor.items):  # Draws the items
                 if item != None:
-                    self.menus.blit(item.image, (208, 52 + (x * 32)))
-                    self.draw_text("{} {}/{}".format(item.NAME, item.DUR, item.MAX_DUR), (255, 255, 255), 240, (56 + (x * 32)))
-            self.draw_text("Equip    Range: {}".format(self.focus_actor.items[0].RANGE.rjust(3, ' ')), (255, 255, 255), 208, 218)
-            self.draw_text("ATK: {}  CRIT: {}".format(str(atk).rjust(3, ' '), str(crit).rjust(3, ' ')), (255, 255, 255), 208, 238)
-            self.draw_text("HIT: {} AVOID: {}".format(str(hit).rjust(3, ' '), str(avoid).rjust(3, ' ')), (255, 255, 255), 208, 258)
+                    self.menus.blit(item.image, (212, 52 + (x * 32)))
+                    self.draw_text("{} {}/{}".format(item.NAME, item.DUR, item.MAX_DUR), (255, 255, 255), 244, (56 + (x * 32)))
+            self.draw_text("Equip    Range: {}".format(self.focus_actor.items[0].RANGE.rjust(3, ' ')), (255, 255, 255), 212, 218)
+            self.draw_text("ATK: {}  CRIT: {}".format(str(atk).rjust(3, ' '), str(crit).rjust(3, ' ')), (255, 255, 255), 212, 238)
+            self.draw_text("HIT: {} AVOID: {}".format(str(hit).rjust(3, ' '), str(avoid).rjust(3, ' ')), (255, 255, 255), 212, 258)
         elif self.r_screen == "supports":
             self.draw_text("Supports", (255, 255, 255), 232, 24)
             self.draw_text("SWORD: {}   AXE: {}".format(self.focus_actor.SWORD.rjust(1, ' '), self.focus_actor.AXE.rjust(1, ' ')), (255, 255, 255), 216, 50)
             self.draw_text("LANCE: {}   BOW: {}".format(self.focus_actor.LANCE.rjust(1, ' '), self.focus_actor.BOW.rjust(1, ' ')), (255, 255, 255), 216, 70)
             
+    def render_end_move_menu(self):
+        
+        pass
+        
     def render(self):
         global map_tiles
         global tile_size
@@ -778,6 +941,7 @@ class PyGame():
             
         # Draw Movement Graph
         self.render_movement_graph()
+        self.render_end_move_menu()
             
         # Draw Menu
         if input_mode != "console" and game_mode != "r_screen":
@@ -806,8 +970,6 @@ if __name__ == "__main__":
 
 ''' 
 ### BUGS
--Sprites
--Inventories
 
 ### TO GET BACK TO
 -Finish adding in all the buttons
@@ -816,8 +978,12 @@ if __name__ == "__main__":
 
 ### TO DO
 - Add sprites
-- Add Loader for terrain, actors, characters, classes
+- Add Loader for terrain, actors, classes
 - Add class for terrain, character (maybe?), class
+- Add interation between actors, characters, classes, etc
 - Add movement + combat
+- Add scaling
+- Add remapping to keys
+- Add saving and loading units/levels
 
 '''
